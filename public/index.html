@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Optimizer Agent — AI-Powered ATS Optimization</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #1a73e8;
+      --blue-dark:  #1558b0;
+      --blue-light: #e8f0fe;
+      --green:      #34a853;
+      --green-light:#e6f4ea;
+      --amber:      #fbbc04;
+      --amber-light:#fef7e0;
+      --red:        #ea4335;
+      --red-light:  #fce8e6;
+      --bg:         #f8f9fa;
+      --surface:    #ffffff;
+      --border:     #dadce0;
+      --text:       #202124;
+      --text-sec:   #5f6368;
+      --shadow:     0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+      --shadow-lg:  0 4px 16px rgba(0,0,0,.12);
+      --radius:     12px;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ---------- Layout ---------- */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--blue);
+    }
+    .logo svg { width: 28px; height: 28px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+
+    .api-key-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .8rem;
+      color: var(--text-sec);
+      cursor: pointer;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg);
+      transition: border-color .2s;
+    }
+    .api-key-badge:hover { border-color: var(--blue); }
+    .api-key-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+    .api-key-badge.configured .dot { background: var(--green); }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* ---------- Cards ---------- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-header h2 {
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .card-header .step-badge {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+    .card-body { padding: 20px; }
+
+    /* ---------- Forms ---------- */
+    label { display: block; font-size: .85rem; font-weight: 600; color: var(--text-sec); margin-bottom: 6px; }
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: .9rem;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color .2s, box-shadow .2s;
+      color: var(--text);
+      background: var(--bg);
+    }
+    textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,115,232,.15); background: var(--surface); }
+
+    /* ---------- File Upload ---------- */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--blue); background: var(--blue-light); }
+    .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+    .upload-zone p { font-size: .85rem; color: var(--text-sec); }
+    .upload-zone strong { color: var(--blue); }
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: var(--green-light);
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: .85rem;
+    }
+    .file-preview.visible { display: flex; }
+    .file-preview .file-icon { font-size: 1.4rem; }
+    .file-preview .file-info { flex: 1; }
+    .file-preview .file-name { font-weight: 600; color: var(--text); }
+    .file-preview .file-meta { color: var(--text-sec); font-size: .78rem; }
+    .file-preview .remove-btn { background: none; border: none; cursor: pointer; color: var(--text-sec); font-size: 1.1rem; padding: 4px; }
+    .file-preview .remove-btn:hover { color: var(--red); }
+
+    /* ---------- Textarea with paste option ---------- */
+    .input-tabs {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .input-tab {
+      flex: 1;
+      padding: 8px;
+      background: var(--bg);
+      border: none;
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--text-sec);
+      transition: background .2s, color .2s;
+    }
+    .input-tab.active { background: var(--blue); color: #fff; }
+    .input-tab:first-child { border-right: 1px solid var(--border); }
+
+    /* ---------- Optimize Button ---------- */
+    .btn-optimize {
+      width: 100%;
+      padding: 14px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .btn-optimize:hover:not(:disabled) { background: var(--blue-dark); }
+    .btn-optimize:active:not(:disabled) { transform: scale(.99); }
+    .btn-optimize:disabled { opacity: .6; cursor: not-allowed; }
+
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- Right panel ---------- */
+    .right-panel { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ---------- Score card ---------- */
+    .scores-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .score-item {
+      text-align: center;
+      padding: 16px 8px;
+    }
+    .score-circle {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 8px;
+      position: relative;
+    }
+    .score-circle svg { transform: rotate(-90deg); }
+    .score-circle .track { fill: none; stroke: var(--border); stroke-width: 8; }
+    .score-circle .fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+    .score-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .score-label { font-size: .78rem; color: var(--text-sec); font-weight: 500; }
+
+    /* ---------- Keywords ---------- */
+    .keyword-section { margin-bottom: 12px; }
+    .keyword-section h4 { font-size: .82rem; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .78rem;
+      font-weight: 500;
+    }
+    .tag.matched { background: var(--green-light); color: #1e7e34; border: 1px solid #c3e6cb; }
+    .tag.missing { background: var(--red-light); color: #c62828; border: 1px solid #f5c6cb; }
+
+    /* ---------- Suggestions ---------- */
+    .suggestion-list { list-style: none; }
+    .suggestion-list li {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+    .suggestion-list li:last-child { border-bottom: none; }
+    .suggestion-list li::before { content: "💡"; flex-shrink: 0; }
+
+    /* ---------- Resume Output ---------- */
+    .resume-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 12px 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .resume-tab {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      font-size: .88rem;
+      font-weight: 500;
+      color: var(--text-sec);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .2s, border-color .2s;
+    }
+    .resume-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    .resume-view { padding: 20px; display: none; }
+    .resume-view.active { display: block; }
+
+    /* ---------- Rendered Resume ---------- */
+    .resume-rendered {
+      font-family: 'Georgia', serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      line-height: 1.6;
+      font-size: .9rem;
+      color: #222;
+    }
+    .resume-rendered h1 { font-size: 1.6rem; font-weight: 700; text-align: center; margin-bottom: 4px; }
+    .resume-rendered .contact-line { text-align: center; color: #555; font-size: .82rem; margin-bottom: 20px; }
+    .resume-rendered .section { margin-bottom: 18px; }
+    .resume-rendered .section-title {
+      font-size: .85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--blue);
+      border-bottom: 1.5px solid var(--blue);
+      padding-bottom: 3px;
+      margin-bottom: 10px;
+    }
+    .resume-rendered .job-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+    .resume-rendered .job-title { font-weight: 700; font-size: .92rem; }
+    .resume-rendered .job-dates { font-size: .82rem; color: #666; }
+    .resume-rendered .job-company { font-style: italic; color: #555; font-size: .85rem; margin-bottom: 6px; }
+    .resume-rendered ul { padding-left: 18px; }
+    .resume-rendered li { margin-bottom: 3px; font-size: .88rem; }
+    .resume-rendered .skills-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .resume-rendered .skill-tag { background: #f1f3f4; padding: 2px 8px; border-radius: 4px; font-size: .82rem; font-family: 'Segoe UI', sans-serif; }
+    .resume-rendered .skill-category { font-weight: 700; font-size: .85rem; margin-bottom: 4px; margin-top: 8px; }
+    .resume-rendered .edu-header { display: flex; justify-content: space-between; }
+    .resume-rendered .edu-degree { font-weight: 700; font-size: .9rem; }
+    .resume-rendered .edu-dates { font-size: .82rem; color: #666; }
+    .resume-rendered .cert-item { font-size: .88rem; padding: 2px 0; }
+
+    /* ---------- Side by side ---------- */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .compare-pane h3 { font-size: .88rem; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    .compare-text {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: .82rem;
+      white-space: pre-wrap;
+      font-family: 'Consolas', monospace;
+      max-height: 500px;
+      overflow-y: auto;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .compare-text.original { border-color: #f5c6cb; }
+    .compare-text.optimized { border-color: #c3e6cb; }
+
+    /* ---------- Export buttons ---------- */
+    .export-bar {
+      display: flex;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .btn {
+      padding: 9px 18px;
+      border-radius: 7px;
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .2s;
+    }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-ghost { background: none; color: var(--text-sec); border: none; }
+    .btn-ghost:hover { color: var(--blue); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ---------- Empty state ---------- */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text-sec);
+    }
+    .empty-state .empty-icon { font-size: 4rem; margin-bottom: 16px; opacity: .5; }
+    .empty-state h3 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+    .empty-state p { font-size: .88rem; max-width: 300px; }
+
+    /* ---------- Progress ---------- */
+    .progress-bar-wrap { height: 3px; background: var(--blue-light); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+    .progress-bar { height: 100%; background: var(--blue); border-radius: 2px; transition: width .3s; width: 0; }
+
+    /* ---------- Modal ---------- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 420px;
+      max-width: 90vw;
+      box-shadow: var(--shadow-lg);
+    }
+    .modal h3 { font-size: 1.1rem; margin-bottom: 12px; }
+    .modal p { font-size: .88rem; color: var(--text-sec); margin-bottom: 16px; line-height: 1.5; }
+    .modal input[type=text], .modal input[type=password] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: .9rem;
+      margin-bottom: 16px;
+      font-family: monospace;
+    }
+    .modal input:focus { outline: none; border-color: var(--blue); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ---------- Toast ---------- */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--text);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: .88rem;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all .3s;
+      z-index: 300;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { background: var(--green); }
+    #toast.error { background: var(--red); }
+
+    /* ---------- Print (PDF export) ---------- */
+    @media print {
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      header, #emptyState, #scoreCard, #suggestionsCard,
+      .resume-tabs, .export-bar, .resume-tab,
+      div[style*="flex-direction:column"], .right-panel > *:not(#resumeOutputCard) { display: none !important; }
+      body, main { background: #fff !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+      main { display: block !important; }
+      #resumeOutputCard { display: block !important; border: none !important; box-shadow: none !important; }
+      #tab-rendered { display: block !important; padding: 0 !important; }
+      #tab-compare, #tab-changes, #tab-edit { display: none !important; }
+      .resume-rendered { border: none !important; box-shadow: none !important; max-width: 100% !important; padding: 0 !important; }
+      @page { margin: 18mm 16mm; size: A4; }
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 1024px) {
+      main { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      main { padding: 12px; gap: 12px; }
+      .scores-grid { grid-template-columns: 1fr; }
+      .compare-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+      <polyline points="10 9 9 9 8 9"/>
+    </svg>
+    Resume Optimizer Agent
+  </div>
+  <div class="header-actions">
+    <div class="api-key-badge" id="apiKeyBadge" onclick="openApiModal()">
+      <span class="dot"></span>
+      <span id="apiKeyLabel">API Key</span>
+    </div>
+  </div>
+</header>
+
+<!-- Main -->
+<main>
+
+  <!-- Left: Inputs -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Step 1: Job Description -->
+    <div class="card">
+      <div class="card-header">
+        <div class="step-badge">1</div>
+        <h2>Job Description</h2>
+      </div>
+      <div class="card-body">
+        <label for="jobDesc">Paste the job description, requirements, or role expectations</label>
+        <textarea id="jobDesc" rows="10" placeholder="Paste the full job description here...
+
+Include:
+• Required skills and qualifications
+• Responsibilities
+• Company-specific keywords
+• Role expectations"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+          <span id="jdCharCount" style="font-size:.75rem;color:var(--text-sec)">0 characters</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Resume Upload -->
+    <div class="card">
+      <div class="card-header">
+        <div class="step-badge">2</div>
+        <h2>Your Current Resume</h2>
+      </div>
+      <div class="card-body">
+
+        <div class="input-tabs">
+          <button class="input-tab active" onclick="switchResumeInput('upload')">Upload File</button>
+          <button class="input-tab" onclick="switchResumeInput('paste')">Paste Text</button>
+        </div>
+
+        <!-- Upload pane -->
+        <div id="uploadPane">
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="resumeFile" accept=".pdf,.docx,.txt" onchange="handleFileSelect()" />
+            <div class="upload-icon">📄</div>
+            <p><strong>Click to upload</strong> or drag & drop</p>
+            <p style="margin-top:4px;">PDF, DOCX, or TXT — up to 10 MB</p>
+          </div>
+          <div class="file-preview" id="filePreview">
+            <span class="file-icon" id="fileTypeIcon">📄</span>
+            <div class="file-info">
+              <div class="file-name" id="fileName">—</div>
+              <div class="file-meta" id="fileMeta">—</div>
+            </div>
+            <button class="remove-btn" onclick="removeFile()" title="Remove file">✕</button>
+          </div>
+        </div>
+
+        <!-- Paste pane -->
+        <div id="pastePane" style="display:none;">
+          <label for="resumeText">Paste your resume text</label>
+          <textarea id="resumeText" rows="12" placeholder="Paste your resume content here..."></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Step 3: Optimize -->
+    <div class="card">
+      <div class="card-header">
+        <div class="step-badge">3</div>
+        <h2>Optimize</h2>
+      </div>
+      <div class="card-body">
+        <p style="font-size:.85rem;color:var(--text-sec);margin-bottom:16px;line-height:1.5;">
+          Claude will analyze the job description, identify key ATS keywords, and rewrite your resume to maximize match rate and impact.
+        </p>
+        <button class="btn-optimize" id="optimizeBtn" onclick="optimize()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Optimize Resume
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Results -->
+  <div class="right-panel" id="resultsPanel">
+
+    <!-- Empty state -->
+    <div class="card" id="emptyState">
+      <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <h3>Your Optimized Resume Appears Here</h3>
+        <p>Fill in the job description, upload your resume, and click <strong>Optimize Resume</strong> to get started.</p>
+      </div>
+    </div>
+
+    <!-- Score Card (hidden initially) -->
+    <div class="card" id="scoreCard" style="display:none;">
+      <div class="card-header">
+        <h2>ATS Analysis</h2>
+      </div>
+      <div class="card-body">
+        <div class="progress-bar-wrap" id="analysisProgress" style="display:none;">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="scores-grid">
+          <div class="score-item">
+            <div class="score-circle">
+              <svg viewBox="0 0 80 80" width="80" height="80">
+                <circle class="track" cx="40" cy="40" r="30"/>
+                <circle class="fill" id="atsArc" cx="40" cy="40" r="30" stroke="#1a73e8" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+              </svg>
+              <div class="score-value" id="atsScore">—</div>
+            </div>
+            <div class="score-label">ATS Score</div>
+          </div>
+          <div class="score-item">
+            <div class="score-circle">
+              <svg viewBox="0 0 80 80" width="80" height="80">
+                <circle class="track" cx="40" cy="40" r="30"/>
+                <circle class="fill" id="kwArc" cx="40" cy="40" r="30" stroke="#34a853" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+              </svg>
+              <div class="score-value" id="kwScore">—</div>
+            </div>
+            <div class="score-label">Keyword Match</div>
+          </div>
+          <div class="score-item">
+            <div class="score-circle">
+              <svg viewBox="0 0 80 80" width="80" height="80">
+                <circle class="track" cx="40" cy="40" r="30"/>
+                <circle class="fill" id="senArc" cx="40" cy="40" r="30" stroke="#fbbc04" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+              </svg>
+              <div class="score-value" id="senLabel" style="font-size:.7rem;">—</div>
+            </div>
+            <div class="score-label">Seniority</div>
+          </div>
+        </div>
+
+        <div class="keyword-section">
+          <h4>✅ Matched Keywords</h4>
+          <div class="tags" id="matchedKeywords"></div>
+        </div>
+        <div class="keyword-section">
+          <h4>❌ Missing Keywords</h4>
+          <div class="tags" id="missingKeywords"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suggestions (hidden initially) -->
+    <div class="card" id="suggestionsCard" style="display:none;">
+      <div class="card-header">
+        <h2>Improvement Suggestions</h2>
+      </div>
+      <div class="card-body" style="padding:0 20px;">
+        <ul class="suggestion-list" id="suggestionsList"></ul>
+      </div>
+    </div>
+
+    <!-- Resume Output (hidden initially) -->
+    <div class="card" id="resumeOutputCard" style="display:none;">
+      <div class="resume-tabs">
+        <button class="resume-tab active" onclick="switchTab('rendered')">Preview</button>
+        <button class="resume-tab" onclick="switchTab('compare')">Side by Side</button>
+        <button class="resume-tab" onclick="switchTab('changes')">Changes</button>
+        <button class="resume-tab" onclick="switchTab('edit')">Edit Text</button>
+      </div>
+
+      <!-- Rendered view -->
+      <div class="resume-view active" id="tab-rendered">
+        <div class="resume-rendered" id="renderedResume"></div>
+      </div>
+
+      <!-- Compare view -->
+      <div class="resume-view" id="tab-compare">
+        <div class="compare-grid">
+          <div class="compare-pane">
+            <h3>Original</h3>
+            <div class="compare-text original" id="originalText"></div>
+          </div>
+          <div class="compare-pane">
+            <h3>Optimized</h3>
+            <div class="compare-text optimized" id="optimizedText"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Changes view -->
+      <div class="resume-view" id="tab-changes">
+        <ul class="suggestion-list" id="changesList" style="padding: 0 4px;"></ul>
+      </div>
+
+      <!-- Edit view -->
+      <div class="resume-view" id="tab-edit">
+        <label style="margin-bottom:8px;display:block;">Edit the optimized resume text below, then re-export</label>
+        <textarea id="editableResume" rows="30" style="font-family:monospace;font-size:.82rem;background:var(--bg);"></textarea>
+      </div>
+
+      <div class="export-bar">
+        <button class="btn btn-primary" onclick="exportDocx()" id="exportDocxBtn">
+          📄 Download DOCX
+        </button>
+        <button class="btn btn-secondary" onclick="exportPdf()" id="exportPdfBtn">
+          📥 Download PDF
+        </button>
+        <button class="btn btn-secondary" onclick="copyText()">
+          📋 Copy Text
+        </button>
+        <button class="btn btn-ghost" onclick="resetAll()" style="margin-left:auto;">
+          🔄 Start Over
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h3>🔑 Anthropic API Key</h3>
+    <p>Your API key is sent only to your local server and never stored in a database. It is kept in memory for this session only.<br><br>
+    Get your key at <strong>console.anthropic.com</strong></p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" />
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeApiModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let state = {
+  apiKey: sessionStorage.getItem('oa_key') || '',
+  resumeInputMode: 'upload',   // 'upload' | 'paste'
+  parsedResumeText: '',
+  uploadedFile: null,
+  result: null,
+  activeTab: 'rendered',
+};
+
+// ============================================================
+// Init
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  updateApiKeyBadge();
+  checkServerHealth();
+
+  // JD char count
+  document.getElementById('jobDesc').addEventListener('input', function() {
+    document.getElementById('jdCharCount').textContent = this.value.length + ' characters';
+  });
+
+  // Drag & drop
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+});
+
+async function checkServerHealth() {
+  try {
+    const r = await fetch('/api/health');
+    const data = await r.json();
+    if (data.apiKeyConfigured) {
+      state.apiKey = '__server__';
+      updateApiKeyBadge(true);
+    }
+  } catch {}
+}
+
+// ============================================================
+// API Key
+// ============================================================
+function openApiModal() {
+  document.getElementById('apiKeyInput').value = state.apiKey === '__server__' ? '' : state.apiKey;
+  document.getElementById('apiModal').classList.add('open');
+  setTimeout(() => document.getElementById('apiKeyInput').focus(), 100);
+}
+function closeApiModal() { document.getElementById('apiModal').classList.remove('open'); }
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  state.apiKey = key;
+  sessionStorage.setItem('oa_key', key);
+  updateApiKeyBadge();
+  closeApiModal();
+  toast('API key saved for this session', 'success');
+}
+function updateApiKeyBadge(serverConfigured = false) {
+  const badge = document.getElementById('apiKeyBadge');
+  const label = document.getElementById('apiKeyLabel');
+  const hasKey = serverConfigured || (state.apiKey && state.apiKey !== '__server__' && state.apiKey.length > 10);
+  badge.className = 'api-key-badge' + (hasKey ? ' configured' : '');
+  label.textContent = serverConfigured ? 'Server Key ✓' : (hasKey ? 'Key Set ✓' : 'Set API Key');
+}
+
+// ============================================================
+// File input switching
+// ============================================================
+function switchResumeInput(mode) {
+  state.resumeInputMode = mode;
+  document.getElementById('uploadPane').style.display = mode === 'upload' ? 'block' : 'none';
+  document.getElementById('pastePane').style.display  = mode === 'paste'  ? 'block' : 'none';
+  document.querySelectorAll('.input-tab').forEach((t,i) => t.classList.toggle('active', (i===0 && mode==='upload') || (i===1 && mode==='paste')));
+}
+
+// ============================================================
+// File handling
+// ============================================================
+function handleFileSelect() {
+  const input = document.getElementById('resumeFile');
+  if (input.files[0]) processFile(input.files[0]);
+}
+
+function processFile(file) {
+  const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(file.type) && !['pdf','docx','txt'].includes(ext)) {
+    toast('Only PDF, DOCX, and TXT files are supported', 'error');
+    return;
+  }
+  state.uploadedFile = file;
+  const icons = { pdf: '📕', docx: '📘', doc: '📘', txt: '📃' };
+  document.getElementById('fileTypeIcon').textContent = icons[ext] || '📄';
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = `${ext.toUpperCase()} · ${(file.size/1024).toFixed(1)} KB`;
+  document.getElementById('filePreview').classList.add('visible');
+  state.parsedResumeText = '';
+}
+
+function removeFile() {
+  state.uploadedFile = null;
+  state.parsedResumeText = '';
+  document.getElementById('resumeFile').value = '';
+  document.getElementById('filePreview').classList.remove('visible');
+}
+
+// ============================================================
+// Main optimize flow
+// ============================================================
+async function optimize() {
+  const jd = document.getElementById('jobDesc').value.trim();
+  if (!jd) { toast('Please paste a job description', 'error'); return; }
+
+  let resumeText = '';
+
+  if (state.resumeInputMode === 'paste') {
+    resumeText = document.getElementById('resumeText').value.trim();
+    if (!resumeText) { toast('Please paste your resume text', 'error'); return; }
+  } else {
+    if (!state.uploadedFile) { toast('Please upload your resume file', 'error'); return; }
+    try {
+      toast('Parsing resume file...');
+      const formData = new FormData();
+      formData.append('resume', state.uploadedFile);
+      const r = await fetch('/api/parse-resume', { method: 'POST', body: formData });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || 'Failed to parse file'); }
+      const data = await r.json();
+      resumeText = data.text;
+      if (!resumeText.trim()) throw new Error('Could not extract text — try pasting the text manually');
+    } catch (err) { toast(err.message, 'error'); return; }
+  }
+
+  state.parsedResumeText = resumeText;
+
+  const btn = document.getElementById('optimizeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Analyzing with Claude...';
+
+  showResultsLoading();
+  animateProgress();
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (state.apiKey && state.apiKey !== '__server__') headers['X-Api-Key'] = state.apiKey;
+
+  try {
+    const response = await fetch('/api/optimize', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ jobDescription: jd, resumeText }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Server error' }));
+      throw new Error(err.error);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let raw = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      raw += decoder.decode(value, { stream: true });
+
+      // Parse SSE events
+      const events = raw.split(/\n\n/);
+      raw = events.pop(); // keep incomplete
+
+      for (const block of events) {
+        const eventLine = block.match(/^event:\s*(\w+)/m);
+        const dataLine  = block.match(/^data:\s*(.+)/ms);
+        if (!dataLine) continue;
+
+        const eventType = eventLine ? eventLine[1] : 'message';
+        let payload;
+        try { payload = JSON.parse(dataLine[1]); } catch { continue; }
+
+        if (eventType === 'status') {
+          btn.innerHTML = `<div class="spinner"></div> ${payload.message}`;
+        } else if (eventType === 'done') {
+          state.result = payload.result;
+          renderResults(payload.result);
+        } else if (eventType === 'error') {
+          throw new Error(payload.message);
+        }
+      }
+    }
+
+  } catch (err) {
+    toast(err.message, 'error');
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('scoreCard').style.display = 'none';
+  } finally {
+    resetOptimizeBtn();
+  }
+}
+
+// ============================================================
+// UI helpers
+// ============================================================
+function showResultsLoading() {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('scoreCard').style.display = 'block';
+  document.getElementById('analysisProgress').style.display = 'block';
+  document.getElementById('suggestionsCard').style.display = 'none';
+  document.getElementById('resumeOutputCard').style.display = 'none';
+  ['atsScore','kwScore'].forEach(id => document.getElementById(id).textContent = '...');
+  document.getElementById('senLabel').textContent = '...';
+  ['atsArc','kwArc','senArc'].forEach(id => {
+    document.getElementById(id).style.strokeDashoffset = '188.5';
+  });
+  document.getElementById('matchedKeywords').innerHTML = '';
+  document.getElementById('missingKeywords').innerHTML = '';
+}
+
+let progressTimer;
+function animateProgress() {
+  let p = 0;
+  const bar = document.getElementById('progressBar');
+  clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    p = Math.min(p + Math.random() * 3, 90);
+    bar.style.width = p + '%';
+  }, 200);
+}
+
+function resetOptimizeBtn() {
+  clearInterval(progressTimer);
+  document.getElementById('progressBar').style.width = '100%';
+  setTimeout(() => { document.getElementById('analysisProgress').style.display = 'none'; }, 500);
+  const btn = document.getElementById('optimizeBtn');
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Optimize Resume';
+}
+
+// ============================================================
+// Render results
+// ============================================================
+function renderResults(r) {
+  if (!r) return;
+
+  // Scores
+  setScore('atsScore', 'atsArc', r.ats_score, '#1a73e8');
+  setScore('kwScore', 'kwArc', r.keyword_match_percent, '#34a853');
+
+  const senMap = { junior: 25, mid: 50, senior: 75, lead: 88, executive: 100 };
+  const senScore = senMap[r.seniority_level] || 50;
+  setScore('senLabel', 'senArc', senScore, '#fbbc04', r.seniority_level?.charAt(0).toUpperCase() + r.seniority_level?.slice(1) || '—');
+
+  // Keywords
+  const matched = document.getElementById('matchedKeywords');
+  const missing  = document.getElementById('missingKeywords');
+  matched.innerHTML = (r.matched_keywords || []).map(k => `<span class="tag matched">✓ ${k}</span>`).join('');
+  missing.innerHTML  = (r.missing_keywords  || []).map(k => `<span class="tag missing">+ ${k}</span>`).join('');
+
+  // Suggestions
+  const sugg = document.getElementById('suggestionsList');
+  sugg.innerHTML = (r.improvement_suggestions || []).map(s => `<li>${s}</li>`).join('');
+  document.getElementById('suggestionsCard').style.display = 'block';
+
+  // Optimized resume
+  if (r.optimized_resume) {
+    renderResumePreview(r.optimized_resume);
+    document.getElementById('originalText').textContent = state.parsedResumeText;
+    document.getElementById('optimizedText').textContent = resumeToText(r.optimized_resume);
+    document.getElementById('editableResume').value = resumeToText(r.optimized_resume);
+
+    const changes = document.getElementById('changesList');
+    changes.innerHTML = (r.changes_summary || []).map(c => `<li>${c}</li>`).join('');
+  }
+
+  document.getElementById('resumeOutputCard').style.display = 'block';
+  resetOptimizeBtn();
+  toast('Resume optimized! ATS Score: ' + (r.ats_score || '—'), 'success');
+
+  // Scroll to results
+  document.getElementById('scoreCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function setScore(valueId, arcId, value, color, displayText) {
+  const el = document.getElementById(valueId);
+  const arc = document.getElementById(arcId);
+  const num = Math.min(100, Math.max(0, parseInt(value) || 0));
+  el.textContent = displayText !== undefined ? displayText : (num + '%');
+  arc.style.stroke = color;
+  const circumference = 188.5;
+  const offset = circumference - (circumference * num / 100);
+  setTimeout(() => { arc.style.strokeDashoffset = offset; }, 100);
+}
+
+// ============================================================
+// Resume preview renderer
+// ============================================================
+function renderResumePreview(opt) {
+  const el = document.getElementById('renderedResume');
+  let html = '';
+
+  if (opt.name) html += `<h1>${esc(opt.name)}</h1>`;
+
+  if (opt.contact) {
+    const parts = [opt.contact.email, opt.contact.phone, opt.contact.location, opt.contact.linkedin, opt.contact.github, opt.contact.website].filter(Boolean);
+    if (parts.length) html += `<div class="contact-line">${parts.map(esc).join(' &nbsp;|&nbsp; ')}</div>`;
+  }
+
+  if (opt.summary) {
+    html += `<div class="section"><div class="section-title">Professional Summary</div><p>${esc(opt.summary)}</p></div>`;
+  }
+
+  if (opt.experience?.length) {
+    html += `<div class="section"><div class="section-title">Work Experience</div>`;
+    for (const exp of opt.experience) {
+      html += `<div style="margin-bottom:14px;">
+        <div class="job-header">
+          <span class="job-title">${esc(exp.title || '')}</span>
+          <span class="job-dates">${esc(exp.dates || '')}</span>
+        </div>
+        <div class="job-company">${esc(exp.company || '')}${exp.location ? ' · ' + esc(exp.location) : ''}</div>`;
+      if (exp.bullets?.length) {
+        html += `<ul>${exp.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (opt.skills?.length) {
+    html += `<div class="section"><div class="section-title">Skills</div>`;
+    if (typeof opt.skills[0] === 'object' && opt.skills[0].category) {
+      for (const sg of opt.skills) {
+        html += `<div class="skill-category">${esc(sg.category)}</div>`;
+        html += `<div class="skills-grid">${(sg.items || []).map(s => `<span class="skill-tag">${esc(s)}</span>`).join('')}</div>`;
+      }
+    } else {
+      html += `<div class="skills-grid">${opt.skills.map(s => `<span class="skill-tag">${esc(s)}</span>`).join('')}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (opt.education?.length) {
+    html += `<div class="section"><div class="section-title">Education</div>`;
+    for (const edu of opt.education) {
+      html += `<div style="margin-bottom:10px;">
+        <div class="edu-header">
+          <span class="edu-degree">${esc(edu.degree || '')}</span>
+          <span class="edu-dates">${esc(edu.dates || '')}</span>
+        </div>
+        <div style="font-size:.85rem;color:#555;">${esc(edu.institution || '')}${edu.gpa ? ` · GPA: ${esc(edu.gpa)}` : ''}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (opt.projects?.length) {
+    html += `<div class="section"><div class="section-title">Projects</div>`;
+    for (const proj of opt.projects) {
+      html += `<div style="margin-bottom:10px;">
+        <strong>${esc(proj.name || '')}</strong>${proj.description ? ` — ${esc(proj.description)}` : ''}`;
+      if (proj.bullets?.length) html += `<ul>${proj.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (opt.certifications?.length) {
+    html += `<div class="section"><div class="section-title">Certifications</div>`;
+    for (const c of opt.certifications) {
+      const text = typeof c === 'string' ? c : `${c.name}${c.issuer ? ' — ' + c.issuer : ''}${c.date ? ' (' + c.date + ')' : ''}`;
+      html += `<div class="cert-item">• ${esc(text)}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function resumeToText(opt) {
+  const lines = [];
+  if (opt.name) lines.push(opt.name, '');
+  if (opt.contact) {
+    const parts = [opt.contact.email, opt.contact.phone, opt.contact.location, opt.contact.linkedin].filter(Boolean);
+    if (parts.length) lines.push(parts.join(' | '), '');
+  }
+  if (opt.summary) { lines.push('PROFESSIONAL SUMMARY', '─'.repeat(40), opt.summary, ''); }
+  if (opt.experience?.length) {
+    lines.push('WORK EXPERIENCE', '─'.repeat(40));
+    for (const e of opt.experience) {
+      lines.push(`${e.title} — ${e.company}  |  ${e.dates || ''}${e.location ? '  |  ' + e.location : ''}`);
+      (e.bullets || []).forEach(b => lines.push('• ' + b));
+      lines.push('');
+    }
+  }
+  if (opt.skills?.length) {
+    lines.push('SKILLS', '─'.repeat(40));
+    if (typeof opt.skills[0] === 'object') {
+      opt.skills.forEach(sg => lines.push(`${sg.category}: ${sg.items.join(', ')}`));
+    } else {
+      lines.push(opt.skills.join(' • '));
+    }
+    lines.push('');
+  }
+  if (opt.education?.length) {
+    lines.push('EDUCATION', '─'.repeat(40));
+    for (const e of opt.education) {
+      lines.push(`${e.degree} — ${e.institution}${e.dates ? '  |  ' + e.dates : ''}${e.gpa ? '  |  GPA: ' + e.gpa : ''}`);
+    }
+    lines.push('');
+  }
+  if (opt.certifications?.length) {
+    lines.push('CERTIFICATIONS', '─'.repeat(40));
+    opt.certifications.forEach(c => {
+      const text = typeof c === 'string' ? c : `${c.name}${c.issuer ? ' — ' + c.issuer : ''}${c.date ? ' (' + c.date + ')' : ''}`;
+      lines.push('• ' + text);
+    });
+  }
+  return lines.join('\n');
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// Tab switching
+// ============================================================
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.resume-tab').forEach((t,i) => {
+    const tabs = ['rendered','compare','changes','edit'];
+    t.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.resume-view').forEach(v => v.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ============================================================
+// Export
+// ============================================================
+async function exportDocx() {
+  if (!state.result?.optimized_resume) { toast('No optimized resume to export', 'error'); return; }
+  const btn = document.getElementById('exportDocxBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  try {
+    const response = await fetch('/api/export/docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ optimized: state.result.optimized_resume }),
+    });
+    if (!response.ok) throw new Error('Export failed');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (state.result.optimized_resume.name || 'Resume').replace(/\s+/g, '_') + '_Optimized.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('DOCX downloaded!', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📄 Download DOCX';
+  }
+}
+
+async function exportPdf() {
+  if (!state.result?.optimized_resume) { toast('No optimized resume to export', 'error'); return; }
+  const btn = document.getElementById('exportPdfBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  try {
+    const response = await fetch('/api/export/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ optimized: state.result.optimized_resume }),
+    });
+    if (!response.ok) throw new Error('PDF generation failed');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (state.result.optimized_resume.name || 'Resume').replace(/\s+/g, '_') + '_Optimized.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('PDF downloaded!', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📥 Download PDF';
+  }
+}
+
+function copyText() {
+  const text = state.activeTab === 'edit'
+    ? document.getElementById('editableResume').value
+    : (state.result ? resumeToText(state.result.optimized_resume) : '');
+  if (!text) { toast('Nothing to copy', 'error'); return; }
+  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!', 'success')).catch(() => toast('Copy failed', 'error'));
+}
+
+function resetAll() {
+  state.result = null;
+  state.parsedResumeText = '';
+  state.uploadedFile = null;
+  document.getElementById('jobDesc').value = '';
+  document.getElementById('resumeText').value = '';
+  document.getElementById('resumeFile').value = '';
+  document.getElementById('filePreview').classList.remove('visible');
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('scoreCard').style.display = 'none';
+  document.getElementById('suggestionsCard').style.display = 'none';
+  document.getElementById('resumeOutputCard').style.display = 'none';
+  document.getElementById('jdCharCount').textContent = '0 characters';
+}
+
+// ============================================================
+// Toast
+// ============================================================
+let toastTimer;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3000);
+}
+</script>
+</body>
+</html>
