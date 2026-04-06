@@ -176,10 +176,23 @@ function buildDocxFromOptimized(optimized) {
   // Skills
   if (optimized.skills && optimized.skills.length > 0) {
     children.push(heading("Skills"));
-    const skillsText = Array.isArray(optimized.skills[0])
-      ? optimized.skills.map((g) => `${g.category}: ${g.items.join(", ")}`).join("\n")
-      : optimized.skills.join("  •  ");
-    children.push(plain(skillsText));
+    if (typeof optimized.skills[0] === "object" && optimized.skills[0].category) {
+      // Grouped skills: { category, items[] }
+      for (const sg of optimized.skills) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `${sg.category}: `, bold: true, size: 22 }),
+              new TextRun({ text: (sg.items || []).join(", "), size: 22 }),
+            ],
+            spacing: { after: 60 },
+          })
+        );
+      }
+    } else {
+      // Flat skills array
+      children.push(plain(optimized.skills.join("  •  ")));
+    }
   }
 
   // Education
