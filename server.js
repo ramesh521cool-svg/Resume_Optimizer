@@ -550,12 +550,94 @@ function buildResumeHtml(opt) {
   </style></head><body>${body}</body></html>`;
 }
 
+// ── Chat: conversational resume refinement ───────────────────────────────────
+app.post("/api/chat", async (req, res) => {
+  const { messages, resumeData, jobDescription } = req.body;
+  if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: "messages array required" });
+
+  const apiKey = process.env.ANTHROPIC_API_KEY || req.headers["x-api-key"];
+  if (!apiKey) return res.status(401).json({ error: "No API key configured" });
+
+  const client = new Anthropic({ apiKey });
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+
+  const SYSTEM = `You are a resume refinement assistant helping the user polish their AI-optimized resume.
+
+CURRENT RESUME (JSON):
+${JSON.stringify(resumeData, null, 2)}
+
+JOB DESCRIPTION:
+${(jobDescription || "").slice(0, 1200)}
+
+INSTRUCTIONS:
+- When the user asks for resume changes: make the change, then return the FULL updated resume JSON wrapped in a \`\`\`json\`\`\` block, followed by a brief friendly explanation of what changed.
+- When the user asks questions (no changes needed): answer conversationally — no JSON block needed.
+- Keep explanations short and friendly.
+- Never truncate the JSON — always return the complete resume structure.
+- The JSON must match this schema exactly: { name, contact, summary, experience, skills, education, projects, certifications }`;
+
+  try {
+    let fullText = "";
+
+    const stream = client.messages.stream({
+      model: "claude-opus-4-6",
+      max_tokens: 8000,
+      system: SYSTEM,
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+    });
+
+    stream.on("text", (delta) => {
+      fullText += delta;
+      send("chunk", { delta });
+    });
+
+    await stream.finalMessage();
+
+    // Extract updated resume JSON if present
+    let updatedResume = null;
+    const jsonMatch = fullText.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1]);
+        updatedResume = parsed.optimized_resume || (parsed.name || parsed.experience ? parsed : null);
+      } catch {}
+    }
+
+    send("done", { updatedResume });
+    res.end();
+  } catch (err) {
+    console.error("Chat error:", err);
+    send("error", { message: err.message });
+    res.end();
+  }
+});
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     apiKeyConfigured: !!process.env.ANTHROPIC_API_KEY,
   });
+});
+
+// Last optimized resume — called by Job Applier AI to fetch tailored result
+const LAST_OPTIMIZED_FILE = path.join(__dirname, ".last-optimized.json");
+app.get("/api/last-optimized", (req, res) => {
+  try {
+    if (!fs.existsSync(LAST_OPTIMIZED_FILE)) return res.json({ resume_text: null });
+    const data = JSON.parse(fs.readFileSync(LAST_OPTIMIZED_FILE, "utf8"));
+    res.json(data);
+  } catch { res.json({ resume_text: null }); }
+});
+app.post("/api/save-optimized", (req, res) => {
+  try {
+    fs.writeFileSync(LAST_OPTIMIZED_FILE, JSON.stringify({ resume_text: req.body.resume_text, saved_at: new Date().toISOString() }));
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
