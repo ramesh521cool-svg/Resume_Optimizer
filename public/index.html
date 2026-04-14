@@ -550,7 +550,7 @@
       main { display: block !important; }
       #resumeOutputCard { display: block !important; border: none !important; box-shadow: none !important; }
       #tab-rendered { display: block !important; padding: 0 !important; }
-      #tab-compare, #tab-changes, #tab-edit { display: none !important; }
+      #tab-compare, #tab-changes, #tab-edit, #tab-chat, #tab-coverletter { display: none !important; }
       .resume-rendered { border: none !important; box-shadow: none !important; max-width: 100% !important; padding: 0 !important; }
       @page { margin: 18mm 16mm; size: A4; }
     }
@@ -758,6 +758,7 @@ Include:
         <button class="resume-tab" onclick="switchTab('changes')">Changes</button>
         <button class="resume-tab" onclick="switchTab('edit')">Edit Text</button>
         <button class="resume-tab" onclick="switchTab('chat')">💬 Refine</button>
+        <button class="resume-tab" onclick="switchTab('coverletter')">📝 Cover Letter</button>
       </div>
 
       <!-- Rendered view -->
@@ -788,6 +789,15 @@ Include:
       <div class="resume-view" id="tab-edit">
         <label style="margin-bottom:8px;display:block;">Edit the optimized resume text below, then re-export</label>
         <textarea id="editableResume" rows="30" style="font-family:monospace;font-size:.82rem;background:var(--bg);"></textarea>
+      </div>
+
+      <!-- Cover Letter view -->
+      <div class="resume-view" id="tab-coverletter">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <label style="font-weight:600;font-size:.95rem;">Cover Letter — edit as needed before sending</label>
+          <button class="btn btn-secondary" style="padding:6px 14px;font-size:.82rem;" onclick="copyCoverLetter()">📋 Copy</button>
+        </div>
+        <textarea id="coverLetterText" rows="20" style="font-family:inherit;font-size:.9rem;background:var(--bg);line-height:1.7;resize:vertical;" placeholder="Cover letter will appear here after optimization..."></textarea>
       </div>
 
       <!-- Chat Refine view -->
@@ -1152,6 +1162,11 @@ function renderResults(r) {
     const changes = document.getElementById('changesList');
     changes.innerHTML = (r.changes_summary || []).map(c => `<li>${c}</li>`).join('');
 
+    // Cover letter
+    if (r.cover_letter) {
+      document.getElementById('coverLetterText').value = r.cover_letter;
+    }
+
     // Auto-save to server so Job Applier AI can fetch it
     const resumeText = resumeToText(r.optimized_resume);
     fetch('/api/save-optimized', {
@@ -1317,7 +1332,7 @@ function esc(str) {
 function switchTab(tab) {
   state.activeTab = tab;
   document.querySelectorAll('.resume-tab').forEach((t,i) => {
-    const tabs = ['rendered','compare','changes','edit','chat'];
+    const tabs = ['rendered','compare','changes','edit','chat','coverletter'];
     t.classList.toggle('active', tabs[i] === tab);
   });
   document.querySelectorAll('.resume-view').forEach(v => v.classList.remove('active'));
@@ -1395,6 +1410,12 @@ function copyText() {
   navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!', 'success')).catch(() => toast('Copy failed', 'error'));
 }
 
+function copyCoverLetter() {
+  const text = document.getElementById('coverLetterText').value;
+  if (!text) { toast('No cover letter to copy', 'error'); return; }
+  navigator.clipboard.writeText(text).then(() => toast('Cover letter copied!', 'success')).catch(() => toast('Copy failed', 'error'));
+}
+
 function resetAll() {
   state.result = null;
   state.parsedResumeText = '';
@@ -1411,6 +1432,7 @@ function resetAll() {
   // Reset chat
   chatHistory.length = 0;
   chatStreaming = false;
+  document.getElementById('coverLetterText').value = '';
   document.getElementById('chatMessages').innerHTML = `
     <div class="chat-welcome" id="chatWelcome">
       <div class="chat-welcome-icon">✨</div>

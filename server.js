@@ -319,6 +319,7 @@ Return a JSON object with EXACTLY this structure (all fields are required; use n
   "improvement_suggestions": [<string>, ...],
   "seniority_level": "<junior|mid|senior|lead|executive>",
   "changes_summary": [<string describing each major change made>, ...],
+  "cover_letter": "<a professional 3-4 paragraph cover letter tailored to this specific job, written in first person, highlighting the candidate's most relevant experience and enthusiasm for the role. Include: opening hook, 1-2 paragraphs on relevant achievements, closing with call to action. Do not use placeholder text — write it as if ready to send.>",
   "optimized_resume": {
     "name": "<full name>",
     "contact": {
